@@ -20,6 +20,10 @@ var (
 		prometheus.BuildFQName("openvpn", "", "up"),
 		"Whether scraping OpenVPN's metrics was successful.",
 		nil, nil)
+	openvpnLastUpdatedDesc = prometheus.NewDesc(
+		prometheus.BuildFQName("openvpn", "", "last_updated"),
+		"Whether scraping OpenVPN's metrics was successful.",
+		nil, nil)
 	openvpnConnectedClientsDesc = prometheus.NewDesc(
 		prometheus.BuildFQName("openvpn", "", "connected_clients"),
 		"Number Of Connected Clients", nil, nil)
@@ -67,6 +71,10 @@ func (e *openVPNExporter) Collect(ch chan<- prometheus.Metric) {
 			openvpnGlobalStatsDesc,
 			prometheus.GaugeValue,
 			float64(status.GlobalStats.MaxBcastMcastQueueLen))
+		ch <- prometheus.MustNewConstMetric(
+			openvpnLastUpdatedDesc,
+			prometheus.GaugeValue,
+			float64(status.UpdatedAt.Unix()))
 		for _, client := range status.ClientList {
 			nameSlice := []string{client.CommonName}
 			nameAndAddressSlice := append(nameSlice, client.RealAddress)
