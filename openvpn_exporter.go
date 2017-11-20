@@ -8,7 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	openvpnStatus "github.com/shrikantpatnaik/go-openvpn-status"
+	"github.com/shrikantpatnaik/go-openvpn-status"
 )
 
 type openVPNExporter struct {
@@ -37,11 +37,11 @@ var (
 	openvpnClientBytesReceivedDesc = prometheus.NewDesc(
 		prometheus.BuildFQName("openvpn", "client", "bytes_received"),
 		"Client Bytes Received",
-		[]string{"name"}, nil)
+		[]string{"name", "real_address"}, nil)
 	openvpnClientBytesSentDesc = prometheus.NewDesc(
 		prometheus.BuildFQName("openvpn", "client", "bytes_sent"),
 		"Client Bytes Sent",
-		[]string{"name"}, nil)
+		[]string{"name", "real_address"}, nil)
 	openvpnRoutingLastRegDesc = prometheus.NewDesc(
 		prometheus.BuildFQName("openvpn", "routing", "last_ref"),
 		"Routing last reference time",
@@ -88,13 +88,13 @@ func (e *openVPNExporter) Collect(ch chan<- prometheus.Metric) {
 				openvpnClientBytesReceivedDesc,
 				prometheus.GaugeValue,
 				bytesReceived,
-				nameSlice...)
+				nameAndAddressSlice...)
 			bytesSent, _ := strconv.ParseFloat(client.BytesSent, 64)
 			ch <- prometheus.MustNewConstMetric(
 				openvpnClientBytesSentDesc,
 				prometheus.GaugeValue,
 				bytesSent,
-				nameSlice...)
+				nameAndAddressSlice...)
 		}
 		for _, route := range status.RoutingTable {
 			labelSlice := []string{route.CommonName, route.VirtualAddress, route.RealAddress}
@@ -129,6 +129,8 @@ func main() {
 	flag.Parse()
 	exporter := newOpenVPNExporter(*openvpnStatusPath)
 	log.Printf("Starting OpenVPN Exporter\n")
+	log.Printf("openvpn.status_path: %v\n", *openvpnStatusPath)
+
 	prometheus.MustRegister(exporter)
 
 	http.Handle(*metricsPath, promhttp.Handler())
